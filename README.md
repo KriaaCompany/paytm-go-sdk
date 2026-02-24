@@ -1,6 +1,6 @@
 # Paytm Payment Gateway Go SDK
 
-Unofficial Go SDK for the [Paytm Payment Gateway](https://developer.paytm.com/docs/). Paytm officially supports Java, Node, PHP, and Python — this SDK fills the gap for Go.
+Unofficial Go SDK for the [Paytm Payment Gateway](https://business.paytm.com/docs). Paytm officially supports Java, Node, PHP, and Python — this SDK fills the gap for Go.
 
 **Zero external dependencies** — uses only the Go standard library.
 

@@ -120,7 +120,7 @@ func (c *Client) InitiateTransaction(ctx context.Context, req InitiateTransactio
 	url := c.env.initiateTransactionURL(c.mid, req.OrderID)
 
 	var resp InitiateTransactionResponse
-	if err := c.doRequest(ctx, url, req.ChannelID, body, &resp); err != nil {
+	if err := c.doRequest(ctx, url, req.ChannelID, req.WorkFlow, body, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -146,7 +146,7 @@ func (c *Client) GetPaymentStatus(ctx context.Context, req PaymentStatusRequest)
 	}
 
 	var resp PaymentStatusResponse
-	if err := c.doRequest(ctx, c.env.paymentStatusURL(), "", body, &resp); err != nil {
+	if err := c.doRequest(ctx, c.env.paymentStatusURL(), "", "", body, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -206,7 +206,7 @@ func (c *Client) InitiateRefund(ctx context.Context, req RefundRequest) (*Refund
 	}
 
 	var resp RefundResponse
-	if err := c.doRequest(ctx, c.env.refundURL(), "", body, &resp); err != nil {
+	if err := c.doRequest(ctx, c.env.refundURL(), "", "", body, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil
@@ -236,7 +236,7 @@ func (c *Client) GetRefundStatus(ctx context.Context, req RefundStatusRequest) (
 	}
 
 	var resp RefundStatusResponse
-	if err := c.doRequest(ctx, c.env.refundStatusURL(), "", body, &resp); err != nil {
+	if err := c.doRequest(ctx, c.env.refundStatusURL(), "", "", body, &resp); err != nil {
 		return nil, err
 	}
 	return &resp, nil

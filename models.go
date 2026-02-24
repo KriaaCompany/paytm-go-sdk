@@ -130,10 +130,12 @@ type ResultInfo struct {
 // --- Request Models ---
 
 // InitiateTransactionRequest holds all parameters for the initiateTransaction API.
-// ChannelID is placed in the request head; all other fields go in the body.
+// ChannelID and WorkFlow are placed in the request head; all other fields go in the body.
 type InitiateTransactionRequest struct {
 	// ChannelID is sent in the request head (APP, WEB, WAP, SYSTEM).
 	ChannelID ChannelID `json:"-"`
+	// WorkFlow is an optional head field (matches PaymentDetail.workFlow in Node SDK).
+	WorkFlow string `json:"-"`
 
 	OrderID                string        `json:"orderId"`
 	TxnAmount              Money         `json:"txnAmount"`
@@ -186,9 +188,10 @@ type InitiateTransactionResponse struct {
 	ResultInfo     ResultInfo `json:"resultInfo"`
 	TxnToken       string     `json:"txnToken"`
 	IsPromoCode    bool       `json:"isPromoCodeValid"`
-	Authenticated  bool       `json:"authenticated"`
-	SubscriptionID string     `json:"subscriptionId,omitempty"`
-	CallbackURL    string     `json:"callbackUrl,omitempty"`
+	Authenticated  bool       `json:"isAuthenticated"`
+	SubscriptionID  string                 `json:"subscriptionId,omitempty"`
+	CallbackURL     string                 `json:"callbackUrl,omitempty"`
+	ExtraParamsMap  map[string]interface{} `json:"extraParamsMap,omitempty"`
 }
 
 // PaymentStatusResponse is the response from the getPaymentStatus API.
@@ -226,8 +229,9 @@ type PaymentStatusResponse struct {
 	UDF2                        string             `json:"udf2,omitempty"`
 	UDF3                        string             `json:"udf3,omitempty"`
 	Comments                    string             `json:"comments,omitempty"`
-	CurrentTxnCount             string             `json:"currentTxnCount,omitempty"`
-	LoyaltyPoints               string             `json:"loyaltyPoints,omitempty"`
+	CurrentTxnCount             string                 `json:"currentTxnCount,omitempty"`
+	LoyaltyPoints               string                 `json:"loyaltyPoints,omitempty"`
+	ExtraParamsMap              map[string]interface{} `json:"extraParamsMap,omitempty"`
 }
 
 // RefundResponse is the response from the async refund API.
@@ -237,9 +241,10 @@ type RefundResponse struct {
 	OrderID      string     `json:"orderId"`
 	MID          string     `json:"mid"`
 	TxnAmount    string     `json:"txnAmount"`
-	RefundID     string     `json:"refundId"`
-	RefundAmount string     `json:"refundAmount"`
-	RefID        string     `json:"refId"`
+	RefundID       string                 `json:"refundId"`
+	RefundAmount   string                 `json:"refundAmount"`
+	RefID          string                 `json:"refId"`
+	ExtraParamsMap map[string]interface{} `json:"extraParamsMap,omitempty"`
 }
 
 // RefundStatusResponse is the response from the refundStatus API.
@@ -260,6 +265,7 @@ type RefundStatusResponse struct {
 	BankName            string     `json:"bankName"`
 	PaymentMode         string     `json:"paymentMode"`
 	RefundID            string     `json:"refundId"`
-	RefundType          string     `json:"refundType"`
-	SSOID               string     `json:"ssoId"`
+	RefundType          string                 `json:"refundType"`
+	SSOID               string                 `json:"ssoId"`
+	ExtraParamsMap      map[string]interface{} `json:"extraParamsMap,omitempty"`
 }

@@ -52,8 +52,8 @@ var successStatuses = map[string]bool{
 // and unmarshals the response body into result.
 //
 // fullURL is the complete endpoint URL including any query parameters.
-// channelID is placed in the request head (empty string = omit).
-func (c *Client) doRequest(ctx context.Context, fullURL string, channelID ChannelID, bodyObj interface{}, result interface{}) error {
+// channelID and workFlow are placed in the request head (empty = omit).
+func (c *Client) doRequest(ctx context.Context, fullURL string, channelID ChannelID, workFlow string, bodyObj interface{}, result interface{}) error {
 	// Marshal body, skipping nil/zero values via omitempty tags
 	bodyBytes, err := json.Marshal(bodyObj)
 	if err != nil {
@@ -72,6 +72,7 @@ func (c *Client) doRequest(ctx context.Context, fullURL string, channelID Channe
 			Version:          headVersion,
 			ChannelID:        string(channelID),
 			RequestTimestamp: strconv.FormatInt(time.Now().UnixMilli(), 10),
+			WorkFlow:         workFlow,
 			ClientID:         c.clientID,
 			Signature:        signature,
 		},
