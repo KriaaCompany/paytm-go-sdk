@@ -15,15 +15,14 @@ const iv = "@@@@&&&&####$$$$"
 
 // Generate creates a Paytm checksum signature for the given body using the merchant key.
 //
-// Algorithm:
-//  1. Generate 4 random bytes, hex-encode to get an 8-char salt
-//  2. Compute SHA256 of (body + "|" + salt) as hex string
-//  3. Concatenate SHA256 hex string + salt
-//  4. PKCS7-pad to AES block size
-//  5. AES-CBC encrypt with merchant key and fixed IV
-//  6. Base64 encode the ciphertext
+// Algorithm (matches Paytm Node SDK EncDecUtil.generateSignature):
+//  1. Generate 3 random bytes, base64-encode to get a 4-char salt
+//  2. Compute SHA256 of (body + "|" + salt) as 64-char hex string
+//  3. Concatenate: SHA256_hex + salt  (total 68 chars)
+//  4. AES-CBC encrypt with merchant key and fixed IV "@@@@&&&&####$$$$"
+//  5. Base64-encode the ciphertext
 func Generate(body, merchantKey string) (string, error) {
-	salt, err := generateRandomSalt(4)
+	salt, err := generateSalt()
 	if err != nil {
 		return "", fmt.Errorf("checksum: failed to generate salt: %w", err)
 	}
@@ -31,6 +30,11 @@ func Generate(body, merchantKey string) (string, error) {
 }
 
 // Verify verifies a Paytm checksum signature against the given body and merchant key.
+//
+// Algorithm (matches Paytm Node SDK EncDecUtil.verifySignature):
+//  1. Base64-decode and AES-CBC decrypt the signature
+//  2. Extract last 4 chars as salt, first 64 chars as stored SHA256 hex
+//  3. Recompute SHA256(body + "|" + salt) and compare
 func Verify(body, signature, merchantKey string) (bool, error) {
 	ciphertext, err := base64.StdEncoding.DecodeString(signature)
 	if err != nil {
@@ -44,14 +48,13 @@ func Verify(body, signature, merchantKey string) (bool, error) {
 
 	decryptedStr := string(decrypted)
 
-	// decrypted = SHA256_hex(body + "|" + salt) + salt
-	// SHA256 hex is always 64 chars
+	// decrypted = SHA256_hex(64 chars) + salt(4 chars)
 	if len(decryptedStr) <= 64 {
 		return false, nil
 	}
 
 	storedHash := decryptedStr[:64]
-	salt := decryptedStr[64:]
+	salt := decryptedStr[64:] // last 4 chars
 
 	hash := sha256.Sum256([]byte(body + "|" + salt))
 	computedHash := hex.EncodeToString(hash[:])
@@ -59,11 +62,21 @@ func Verify(body, signature, merchantKey string) (bool, error) {
 	return storedHash == computedHash, nil
 }
 
+// generateSalt generates 3 random bytes and base64-encodes them to a 4-char string.
+// This matches Node SDK: crypto.randomBytes((4 * 3.0) / 4.0).toString('base64')
+func generateSalt() (string, error) {
+	b := make([]byte, 3)
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.StdEncoding.EncodeToString(b), nil
+}
+
 func generateWithSalt(body, merchantKey, salt string) (string, error) {
 	hash := sha256.Sum256([]byte(body + "|" + salt))
 	hashHex := hex.EncodeToString(hash[:])
 
-	plaintext := []byte(hashHex + salt)
+	plaintext := []byte(hashHex + salt) // 64 + 4 = 68 chars
 
 	encrypted, err := aesEncrypt(plaintext, []byte(merchantKey))
 	if err != nil {
@@ -71,14 +84,6 @@ func generateWithSalt(body, merchantKey, salt string) (string, error) {
 	}
 
 	return base64.StdEncoding.EncodeToString(encrypted), nil
-}
-
-func generateRandomSalt(length int) (string, error) {
-	b := make([]byte, length)
-	if _, err := rand.Read(b); err != nil {
-		return "", err
-	}
-	return hex.EncodeToString(b), nil
 }
 
 func aesEncrypt(plaintext, key []byte) ([]byte, error) {

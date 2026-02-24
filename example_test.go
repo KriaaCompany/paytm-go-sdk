@@ -10,29 +10,25 @@ import (
 )
 
 func ExampleNewClient() {
-	// Create a client for the staging environment
 	client := paytm.NewClient(
 		"YOUR_MID",
 		"YOUR_MERCHANT_KEY__", // must be 16, 24, or 32 bytes
 		"WEBSTAGING",
 		paytm.EnvStaging,
 	)
-
-	_ = client // use client to call API methods
+	_ = client
 }
 
 func ExampleNewClient_withOptions() {
-	// Create a client with custom HTTP settings
 	client := paytm.NewClient(
 		"YOUR_MID",
-		"YOUR_MERCHANT_KEY__", // must be 16, 24, or 32 bytes
+		"YOUR_MERCHANT_KEY__",
 		"DEFAULT",
 		paytm.EnvProduction,
-		paytm.WithHTTPClient(&http.Client{
-			Timeout: 60 * time.Second,
-		}),
+		paytm.WithHTTPClient(&http.Client{Timeout: 60 * time.Second}),
+		paytm.WithClientID("YOUR_CLIENT_ID"),
+		paytm.WithCallbackURL("https://yoursite.com/paytm/callback"),
 	)
-
 	_ = client
 }
 
@@ -40,18 +36,48 @@ func ExampleClient_InitiateTransaction() {
 	client := paytm.NewClient("YOUR_MID", "YOUR_MERCHANT_KEY__", "WEBSTAGING", paytm.EnvStaging)
 
 	resp, err := client.InitiateTransaction(context.Background(), paytm.InitiateTransactionRequest{
+		ChannelID: paytm.ChannelWeb,
 		OrderID:   "ORDER_001",
 		TxnAmount: paytm.Money{Value: "100.00", Currency: "INR"},
 		UserInfo:  paytm.UserInfo{CustID: "CUST_001"},
-		ChannelID: "WEB",
 	})
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
-
 	fmt.Println("TxnToken:", resp.TxnToken)
 	fmt.Println("Status:", resp.ResultInfo.ResultStatus)
+}
+
+func ExampleClient_InitiateTransaction_withPaymentModes() {
+	client := paytm.NewClient("YOUR_MID", "YOUR_MERCHANT_KEY__", "WEBSTAGING", paytm.EnvStaging)
+
+	resp, err := client.InitiateTransaction(context.Background(), paytm.InitiateTransactionRequest{
+		ChannelID: paytm.ChannelWeb,
+		OrderID:   "ORDER_002",
+		TxnAmount: paytm.Money{Value: "500.00", Currency: "INR"},
+		UserInfo: paytm.UserInfo{
+			CustID: "CUST_001",
+			Mobile: "9999999999",
+			Email:  "user@example.com",
+		},
+		EnablePaymentMode: []paytm.PaymentMode{
+			{Mode: paytm.PaymentModeNameUPI},
+			{Mode: paytm.PaymentModeNameCreditCard, Channels: []string{"VISA", "MASTERCARD"}},
+		},
+		DisablePaymentMode: []paytm.PaymentMode{
+			{Mode: paytm.PaymentModeNameEMI},
+		},
+		ExtendInfo: &paytm.ExtendInfo{
+			UDF1:       "custom-value-1",
+			MercUnqRef: "my-internal-ref-001",
+		},
+	})
+	if err != nil {
+		fmt.Println("Error:", err)
+		return
+	}
+	fmt.Println("TxnToken:", resp.TxnToken)
 }
 
 func ExampleClient_GetPaymentStatus() {
@@ -64,10 +90,10 @@ func ExampleClient_GetPaymentStatus() {
 		fmt.Println("Error:", err)
 		return
 	}
-
 	fmt.Println("TxnID:", resp.TxnID)
 	fmt.Println("Status:", resp.ResultInfo.ResultStatus)
 	fmt.Println("Amount:", resp.TxnAmount)
+	fmt.Println("Mode:", resp.PaymentMode)
 }
 
 func ExampleClient_InitiateRefund() {
@@ -79,12 +105,12 @@ func ExampleClient_InitiateRefund() {
 		TxnID:        "TXN_12345",
 		TxnType:      "REFUND",
 		RefundAmount: "50.00",
+		Comments:     "Customer requested refund",
 	})
 	if err != nil {
 		fmt.Println("Error:", err)
 		return
 	}
-
 	fmt.Println("RefundID:", resp.RefundID)
 	fmt.Println("Status:", resp.ResultInfo.ResultStatus)
 }
@@ -100,8 +126,7 @@ func ExampleClient_GetRefundStatus() {
 		fmt.Println("Error:", err)
 		return
 	}
-
 	fmt.Println("RefundID:", resp.RefundID)
 	fmt.Println("Status:", resp.ResultInfo.ResultStatus)
-	fmt.Println("Amount:", resp.RefundAmount)
+	fmt.Println("Total Refunded:", resp.TotalRefundedAmount)
 }

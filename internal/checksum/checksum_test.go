@@ -1,6 +1,7 @@
 package checksum
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -53,7 +54,8 @@ func TestVerify_InvalidBase64(t *testing.T) {
 
 func TestGenerateWithSalt_Deterministic(t *testing.T) {
 	body := `{"mid":"TEST_MID","orderId":"ORDER_001"}`
-	salt := "abcd1234"
+	// Salt must be exactly 4 chars to match the expected format
+	salt := "ab+="
 
 	sig1, err := generateWithSalt(body, testMerchantKey, salt)
 	if err != nil {
@@ -102,6 +104,26 @@ func TestEmptyBody(t *testing.T) {
 	}
 	if !valid {
 		t.Error("empty body signature failed verification")
+	}
+}
+
+// TestSaltIsBase64FourChars verifies the salt generation matches the Node SDK:
+// crypto.randomBytes(3).toString('base64') always produces 4 chars.
+func TestSaltIsBase64FourChars(t *testing.T) {
+	for i := 0; i < 100; i++ {
+		salt, err := generateSalt()
+		if err != nil {
+			t.Fatalf("generateSalt failed: %v", err)
+		}
+		if len(salt) != 4 {
+			t.Errorf("expected 4-char salt, got %d chars: %q", len(salt), salt)
+		}
+		// Base64 chars are A-Z, a-z, 0-9, +, /, =
+		for _, c := range salt {
+			if !strings.ContainsRune("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=", c) {
+				t.Errorf("non-base64 char in salt: %q", salt)
+			}
+		}
 	}
 }
 
