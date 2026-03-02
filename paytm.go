@@ -20,6 +20,8 @@ import (
 	"context"
 	"net/http"
 	"time"
+
+	"github.com/KriaaCompany/paytm-go-sdk/internal/checksum"
 )
 
 // Client is the Paytm Payment Gateway API client.
@@ -240,4 +242,10 @@ func (c *Client) GetRefundStatus(ctx context.Context, req RefundStatusRequest) (
 		return nil, err
 	}
 	return &resp, nil
+}
+
+// VerifyChecksum verifies a Paytm checksum signature against a body string and merchant key.
+// This is useful for verifying webhook payloads without a Client instance.
+func VerifyChecksum(body, signature, merchantKey string) (bool, error) {
+	return checksum.Verify(body, signature, merchantKey)
 }
